@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prize Mine</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --win-gray:#c0c0c0;
+    --dark:#404040;
+    --mid:#808080;
+    --light:#ffffff;
+    --blue:#1d3fd6;
+  }
+
+  *{ box-sizing:border-box; }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:'Press Start 2P', monospace;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding:34px 10px;
+    color:#000;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(255,255,0,0.25) 0 1%, transparent 2%),
+      radial-gradient(circle at 40% 80%, rgba(255,0,255,0.25) 0 1%, transparent 2%),
+      linear-gradient(135deg, #00cfff, #ff4fd8 50%, #ffe600);
+    overflow-x:hidden;
+  }
+
+  .pixel-bg{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    opacity:.5;
+    background-image:
+      linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px);
+    background-size:28px 28px;
+  }
+
+  .floating{
+    position:fixed;
+    width:56px;
+    height:56px;
+    image-rendering:pixelated;
+    filter: drop-shadow(4px 4px 0 rgba(0,0,0,.28));
+    animation: bob 3.5s steps(4) infinite;
+    pointer-events:none;
+  }
+
+  .f1{left:8%;top:12%;animation-delay:.2s}
+  .f2{right:9%;top:11%;animation-delay:.8s}
+  .f3{left:13%;bottom:16%;animation-delay:1.1s}
+  .f4{right:16%;bottom:19%;animation-delay:.5s}
+  .f5{right:5%;top:48%;animation-delay:1.4s}
+  .f6{left:5%;top:48%;animation-delay:.9s}
+  .f7{left:80%;top:30%;animation-delay:.4s}
+
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+  .pixel-gift{
+    position:relative;
+    width:56px;
+    height:56px;
+  }
+
+  .pixel-gift::before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:0;
+    width:7px;
+    height:7px;
+    background:transparent;
+    box-shadow:
+      21px 0 #e74c3c,28px 0 #ff8a7a,
+      14px 7px #e74c3c,21px 7px #ff8a7a,28px 7px #e74c3c,35px 7px #ff8a7a,
+      7px 14px #102210,14px 14px #e74c3c,21px 14px #e74c3c,28px 14px #e74c3c,35px 14px #e74c3c,42px 14px #102210,
+      7px 21px #102210,14px 21px #f2a01f,21px 21px #f7c36a,28px 21px #e74c3c,35px 21px #f2a01f,42px 21px #102210,
+      7px 28px #102210,14px 28px #f2a01f,21px 28px #f2a01f,28px 28px #e74c3c,35px 28px #f2a01f,42px 28px #102210,
+      7px 35px #102210,14px 35px #e6951a,21px 35px #f2a01f,28px 35px #e74c3c,35px 35px #e6951a,42px 35px #102210,
+      14px 42px #102210,21px 42px #102210,28px 42px #102210,35px 42px #102210;
+  }
+
+  .pixel-coin{
+    width:46px;
+    height:46px;
+    margin:5px;
+    border-radius:50%;
+    background:#ffe66d;
+    box-shadow:inset -5px -5px #c9a227, inset 5px 5px #fff3a6, 0 0 0 4px #8b6b00;
+  }
+
+  .pixel-reward{
+    width:52px;
+    height:52px;
+    margin:2px;
+    background:#69f7ff;
+    clip-path:polygon(50% 0,65% 35%,100% 35%,72% 57%,82% 100%,50% 75%,18% 100%,28% 57%,0 35%,35% 35%);
+    box-shadow:4px 4px 0 rgba(0,0,0,.3);
+  }
+
+  .pixel-boombox{
+    width:42px;
+    height:28px;
+    margin:14px 7px;
+    background:#2b2d42;
+    box-shadow:
+      0 -7px #2b2d42,7px -7px #2b2d42,14px -7px #2b2d42,21px -7px #2b2d42,28px -7px #2b2d42,
+      7px 7px #69f7ff,28px 7px #69f7ff,
+      7px 14px #ff6bd6,28px 14px #ff6bd6;
+  }
+
+  .pixel-star{
+    width:52px;
+    height:52px;
+    margin:2px;
+    background:#ffe66d;
+    clip-path:polygon(50% 0,61% 34%,98% 35%,68% 56%,79% 91%,50% 70%,21% 91%,32% 56%,2% 35%,39% 34%);
+  }
+
+  .window{
+    position:relative;
+    z-index:2;
+    width:max-content;
+    margin:0 auto;
+    background:var(--win-gray);
+    border:4px solid;
+    border-color:var(--light) var(--dark) var(--dark) var(--light);
+    padding:6px;
+    box-shadow:8px 8px 0 rgba(0,0,0,.45);
+  }
+
+  .titlebar{
+    background:linear-gradient(90deg,#071080,#2458ff);
+    color:#fff;
+    font-size:10px;
+    padding:5px 6px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+  }
+
+  .title-left{display:flex;align-items:center;gap:7px;}
+  .bot-icon{font-size:14px;line-height:1;}
+  .window-buttons{display:flex;gap:3px;}
+  .tiny-btn{width:18px;height:16px;padding:0;font-size:8px;line-height:1;}
+
+  .brand{
+    margin:7px 0;
+    padding:7px 6px;
+    font-size:8px;
+    text-align:center;
+    color:#222;
+    background:#e7e7d3;
+    border:2px solid;
+    border-color:var(--dark) var(--light) var(--light) var(--dark);
+  }
+
+  .panel{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border:3px solid;
+    border-color:var(--mid) var(--light) var(--light) var(--mid);
+    padding:7px;
+    margin-bottom:7px;
+    background:var(--win-gray);
+  }
+
+  .counter{
+    background:#000;
+    color:#ff1d1d;
+    font-family:monospace;
+    font-weight:bold;
+    font-size:24px;
+    line-height:1;
+    padding:4px 6px;
+    width:70px;
+    text-align:right;
+    letter-spacing:1px;
+    text-shadow:0 0 4px #ff1d1d;
+  }
+
+  .face{
+    width:34px;
+    height:34px;
+    background:#ffea3a;
+    border:3px solid;
+    border-color:var(--light) var(--mid) var(--mid) var(--light);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    font-size:19px;
+  }
+
+  .face:active, button:active, .cell:active{border-color:var(--mid) var(--light) var(--light) var(--mid);}
+
+  .code{
+    margin-bottom:7px;
+    padding:12px 10px;
+    text-align:center;
+    color:#0026ff;
+    background:linear-gradient(90deg,#fff6a8,#ffe66d);
+    border:3px solid;
+    border-color:#fff #808080 #808080 #fff;
+    box-shadow:inset -2px -2px #bfae2e, inset 2px 2px #fff9c4;
+  }
+
+  .code-label{
+    font-size:11px;
+    margin-bottom:6px;
+    color:#000;
+    letter-spacing:1px;
+  }
+
+  .code-hint{
+    font-size:7px;
+    margin-bottom:6px;
+    color:#000;
+    opacity:.6;
+  }
+  .code-slots{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;font-size:11px;letter-spacing:0;}
+  .code-char{display:inline-flex;align-items:center;justify-content:center;min-width:14px;min-height:16px;}
+  .code-char.flash{animation:pixelFlash .45s steps(2);}
+
+  @keyframes pixelFlash{
+    0%{background:#0026ff;color:#fff;transform:scale(1)}
+    35%{background:#ff3b7f;color:#fff;transform:scale(1.35)}
+    70%{background:#ffe66d;color:#000;transform:scale(1.1)}
+    100%{background:transparent;color:#0026ff;transform:scale(1)}
+  }
+
+  .message{
+    width:100%;
+    min-height:34px;
+    margin-bottom:7px;
+    padding:8px;
+    font-size:8px;
+    line-height:1.45;
+    background:#f4f4de;
+    border:2px solid;
+    border-color:var(--dark) var(--light) var(--light) var(--dark);
+  }
+
+  .board{
+    display:grid;
+    grid-template-columns:repeat(9, 30px);
+    grid-template-rows:repeat(9, 30px);
+    gap:0;
+    width:278px;
+    height:278px;
+    border:4px solid;
+    border-color:var(--mid) var(--light) var(--light) var(--mid);
+    background:var(--mid);
+    margin:0 auto;
+  }
+
+  .cell{
+    width:30px;
+    height:30px;
+    background:var(--win-gray);
+    border:3px solid;
+    border-color:var(--light) var(--mid) var(--mid) var(--light);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:Arial,sans-serif;
+    font-size:20px;
+    font-weight:900;
+    cursor:pointer;
+    user-select:none;
+  }
+
+  .cell.open{background:#bdbdbd;border:1px solid var(--mid);cursor:default;}
+  .cell.flagged{font-size:18px;}
+  .cell.boom{background:#ff1d1d;}
+  .cell.correct-flag{background:#a7ff83;}
+  .cell.wrong-flag{background:#ff8fa3;}
+  .n1{color:#0000ff}.n2{color:#008000}.n3{color:#ff0000}.n4{color:#000080}.n5{color:#800000}.n6{color:#008080}.n7{color:#000}.n8{color:#808080}
+
+  .controls{display:flex;justify-content:space-between;gap:6px;margin-top:7px;}
+  button{font-family:'Press Start 2P', monospace;font-size:8px;padding:7px 8px;background:var(--win-gray);border:3px solid;border-color:var(--light) var(--mid) var(--mid) var(--light);cursor:pointer;}
+  #rulesBtn{background:#ffe66d;border-color:#fff #bfae2e #bfae2e #fff;color:#000;}
+  #rulesBtn:hover{background:#fff176;}
+  .flag-on{background:#ffe66d;}
+
+  .promo{display:none;margin-top:7px;padding:10px;background:#fff8c9;border:3px solid;border-color:var(--light) var(--mid) var(--mid) var(--light);font-size:8px;line-height:1.5;}
+  .promo.show{display:block;}
+  .promo a{color:#0000cc;}
+
+  .linkedin-line{margin-top:7px;padding:8px;text-align:center;font-size:8px;line-height:1.45;background:#e7e7d3;border:2px solid;border-color:var(--dark) var(--light) var(--light) var(--dark);}
+  .linkedin-line a{color:#0000cc;text-decoration:none;}
+  .linkedin-line a:hover{text-decoration:underline;}
+
+  .boom-popup{
+    pointer-events:auto;
+
+    animation:popupBoom .35s steps(2), screenShake .35s;
+
+    position:fixed;
+    top:30%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    z-index:20;
+    background:linear-gradient(135deg,#ff3b7f,#ff7a00);
+    color:#fff;
+    padding:18px 20px;
+    text-align:center;
+    font-size:10px;
+    line-height:1.6;
+    border:4px solid;
+    border-color:#fff #7a001f #7a001f #fff;
+    box-shadow:8px 8px 0 #000;
+    animation:popupBoom .35s steps(2);
+  }
+
+  .boom-popup.hidden{display:none;}
+
+  .boom-close{
+    position:absolute;
+    top:6px;
+    right:8px;
+    cursor:pointer;
+    font-size:12px;
+    color:#fff;
+  }
+
+  @keyframes popupBoom{
+    0%{transform:translate(-50%, -60%) scale(.75)}
+    60%{transform:translate(-50%, -50%) scale(1.08)}
+    100%{transform:translate(-50%, -50%) scale(1)}
+  }
+
+  @keyframes screenShake{
+    0%{transform:translate(-50%, -50%) translateX(0)}
+    20%{transform:translate(-50%, -50%) translateX(-6px)}
+    40%{transform:translate(-50%, -50%) translateX(6px)}
+    60%{transform:translate(-50%, -50%) translateX(-4px)}
+    80%{transform:translate(-50%, -50%) translateX(4px)}
+    100%{transform:translate(-50%, -50%) translateX(0)}
+  }
+    60%{transform:translate(-50%, -50%) scale(1.08)}
+    100%{transform:translate(-50%, -50%) scale(1)}
+  }
+
+  .modal{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:20px;}
+
+  .linkedin-line{
+    position:relative;
+    z-index:50;
+  }
+
+  .linkedin-line a{
+    position:relative;
+    z-index:60;
+    pointer-events:auto;
+  }
+  .modal.hidden{display:none;}
+  .modal-box{background:var(--win-gray);padding:14px;border:4px solid;border-color:var(--light) var(--dark) var(--dark) var(--light);width:min(360px,100%);font-size:9px;line-height:1.55;box-shadow:6px 6px 0 #000;}
+  .modal-title{margin-bottom:12px;color:#000080;}
+
+  @media(max-width:480px){
+    .board{grid-template-columns:repeat(9,28px);grid-template-rows:repeat(9,28px);width:260px;height:260px}
+    .cell{width:28px;height:28px;font-size:18px}
+    .floating{width:44px;height:44px}
+  }
+</style>
+</head>
+<body>
+<div class="pixel-bg"></div>
+<div class="floating f1"><div class="pixel-gift"></div></div>
+<div class="floating f2"><div class="pixel-coin"></div></div>
+<div class="floating f3"><div class="pixel-reward"></div></div>
+<div class="floating f4"><div class="pixel-boombox"></div></div>
+<div class="floating f5"><div class="pixel-star"></div></div>
+<div class="floating f6"><div class="pixel-coin"></div></div>
+<div class="floating f7"><div class="pixel-gift"></div></div>
+
+<div class="window">
+  <div class="titlebar">
+    <div class="title-left"><span class="bot-icon">🤖</span><span>Prize Mine · Daily explosive rewards</span></div>
+    <div class="window-buttons"><button class="tiny-btn">_</button><button class="tiny-btn">□</button><button class="tiny-btn">×</button></div>
+  </div>
+
+  <div class="brand">this could be your lovely brand</div>
+
+  <div class="panel">
+    <div id="attempts" class="counter">003</div>
+    <div id="reset" class="face">🙂</div>
+    <div id="mines" class="counter">010</div>
+  </div>
+
+  <div class="code">
+    <div class="code-label">YOUR PROMOCODE</div>
+    <div class="code-hint">one bomb = one symbol</div>
+    <div id="code" class="code-slots"></div>
+  </div>
+
+  <div id="message" class="message">Open safe tiles. Flag all 10 prize mines to unlock the code and get a prize.</div>
+  <div id="board" class="board"></div>
+
+  <div class="controls">
+    <button id="start">new mine</button>
+    <button id="flag">flag: off</button>
+    <button id="rulesBtn">rules</button>
+  </div>
+
+  <div id="promo" class="promo">
+    <b>You unlocked the promo code. Congratulations!</b><br>
+    This is a demo version of the game. Want one for your product?<br>
+    <a href="mailto:iria.brv@gmail.com?subject=PrizeMine%20demo%20for%20my%20product">Contact PrizeMine</a>
+  </div>
+
+  <div class="linkedin-line">
+    Engagement for your business through play · <a href="https://www.linkedin.com/in/borovleva/" target="_blank" rel="noopener">LinkedIn</a>
+  </div>
+</div>
+
+<div id="boomPopup" class="boom-popup hidden">
+  <div class="boom-close" onclick="closeBoomPopup()">×</div>
+  💥 OOPS! BAD LUCK 💥<br>
+  try again or come back tomorrow<br>
+  for fresh explosive rewards
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-title">RULES</div>
+    1. Play and mine your reward. You have 3 attempts per day.<br><br>
+    2. Play several days in a row to unlock more attempts: +1 attempt for each daily return.<br><br>
+    Open safe tiles. Use numbers to find prize mines. Right-click or use flag mode to mark them.<br><br>
+    HAVE FUN!<br><br>
+    <button onclick="closeModal()">close</button>
+  </div>
+</div>
+
+<script>
+const clickSound = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_4c8fbb5b2f.mp3?filename=click-124467.mp3');
+const flagSound = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_4c8fbb5b2f.mp3?filename=click-124467.mp3');
+const DEFAULT_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 7;
+const SIZE = 9;
+const MINES = 10;
+const CODE = 'PRIZEMINE!';
+let board = [];
+let attempts = DEFAULT_ATTEMPTS;
+let flags = 0;
+let flagMode = false;
+let gameOver = false;
+let firstClick = true;
+let foundCode = Array(MINES).fill('_');
+let lastRenderedCode = Array(MINES).fill('_');
+
+const boardEl = document.getElementById('board');
+const attemptsEl = document.getElementById('attempts');
+const minesEl = document.getElementById('mines');
+const codeEl = document.getElementById('code');
+const modal = document.getElementById('modal');
+const face = document.getElementById('reset');
+const messageEl = document.getElementById('message');
+const flagBtn = document.getElementById('flag');
+const promoEl = document.getElementById('promo');
+const boomPopup = document.getElementById('boomPopup');
+
+document.getElementById('rulesBtn').onclick = () => modal.classList.remove('hidden');
+window.closeModal = () => modal.classList.add('hidden');
+function safeSound(sound){ sound.currentTime = 0; sound.play().catch(()=>{}); }
+function showBoomPopup(){
+  boomPopup.classList.remove('hidden');
+}
+
+function closeBoomPopup(){
+  boomPopup.classList.add('hidden');
+  init();
+}
+function today(){ return new Date().toISOString().slice(0,10); }
+function getStreak(){ return Number(localStorage.getItem('pm_streak') || 0); }
+function getAttempts(){ return Math.min(MAX_ATTEMPTS, DEFAULT_ATTEMPTS + getStreak()); }
+function remainingKey(){ return 'pm_remaining_' + today(); }
+function getRemainingAttempts(){
+  const saved = localStorage.getItem(remainingKey());
+  if(saved === null){
+    const fresh = getAttempts();
+    localStorage.setItem(remainingKey(), String(fresh));
+    return fresh;
+  }
+  return Number(saved);
+}
+function saveRemainingAttempts(value){
+  localStorage.setItem(remainingKey(), String(Math.max(0, value)));
+}
+function saveWin(){ localStorage.setItem('pm_streak', String(Math.min(MAX_ATTEMPTS - DEFAULT_ATTEMPTS, getStreak() + 1))); localStorage.setItem('pm_last', today()); }
+function saveLoss(){ localStorage.setItem('pm_last', today()); }
+
+function init(){
+  attempts = getRemainingAttempts();
+  flags = 0;
+  flagMode = false;
+  gameOver = false;
+  firstClick = true;
+  foundCode = Array(MINES).fill('_');
+  lastRenderedCode = Array(MINES).fill('_');
+  face.textContent = '🙂';
+  promoEl.classList.remove('show');
+  flagBtn.textContent = 'flag: off';
+  flagBtn.classList.remove('flag-on');
+  messageEl.textContent = attempts > 0
+    ? 'Open safe tiles. Flag all 10 prize mines to unlock the code and get a prize.'
+    : 'That was all attempts for today. Come back tomorrow for fresh explosive rewards.';
+  gameOver = attempts <= 0;
+  board = Array.from({length: SIZE * SIZE}, (_, i) => ({i, mine:false, open:false, flag:false, adj:0, wrong:false, correct:false, exploded:false, codeChar:null}));
+  render();
+}
+
+function placeMines(safeIndex){
+  const blocked = new Set([safeIndex, ...neighbors(safeIndex)]);
+  let placed = 0;
+  while(placed < MINES){
+    const i = Math.floor(Math.random() * board.length);
+    if(!board[i].mine && !blocked.has(i)){
+      board[i].mine = true;
+      board[i].codeChar = CODE[placed] || '?';
+      placed++;
+    }
+  }
+  board.forEach((c,i) => c.adj = neighbors(i).filter(n => board[n].mine).length);
+}
+
+function neighbors(i){
+  const r = Math.floor(i / SIZE), c = i % SIZE, arr = [];
+  for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++){
+    if(dr === 0 && dc === 0) continue;
+    const nr = r + dr, nc = c + dc;
+    if(nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE) arr.push(nr * SIZE + nc);
+  }
+  return arr;
+}
+
+function render(){
+  boardEl.innerHTML = '';
+  board.forEach((c,i) => {
+    const el = document.createElement('div');
+    el.className = 'cell';
+    if(c.open){
+      el.classList.add('open');
+      if(c.mine) el.textContent = '✹';
+      else if(c.adj > 0){ el.textContent = c.adj; el.classList.add('n' + c.adj); }
+    }
+    if(!c.open && c.flag){ el.textContent = '⚑'; el.classList.add('flagged'); }
+    if(c.exploded) el.classList.add('boom');
+    if(c.correct) el.classList.add('correct-flag');
+    if(c.wrong) el.classList.add('wrong-flag');
+    el.onclick = () => clickCell(i);
+    el.oncontextmenu = e => { e.preventDefault(); toggleFlag(i); };
+    boardEl.appendChild(el);
+  });
+  attemptsEl.textContent = String(attempts).padStart(3,'0');
+  minesEl.textContent = String(MINES - flags).padStart(3,'0');
+  codeEl.innerHTML = foundCode.map((ch, index) => {
+    const flash = ch !== '_' && ch !== lastRenderedCode[index] ? ' flash' : '';
+    return `<span class="code-char${flash}">${ch}</span>`;
+  }).join('');
+  lastRenderedCode = [...foundCode];
+}
+
+function clickCell(i){
+  if(gameOver) return;
+  if(flagMode) return toggleFlag(i);
+  const c = board[i];
+  if(c.open || c.flag) return;
+  if(firstClick){ placeMines(i); firstClick = false; }
+  face.textContent = '😮';
+  safeSound(clickSound);
+  setTimeout(() => { if(!gameOver) face.textContent = '🙂'; }, 180);
+  if(c.mine){
+    showBoomPopup();
+    attempts--;
+    saveRemainingAttempts(attempts);
+    c.exploded = true;
+    if(attempts <= 0) lose(i);
+    else{ messageEl.textContent = 'Oops! Bad luck. Try again or come back tomorrow for fresh explosive rewards.'; c.open = true; render(); }
+    return;
+  }
+  openSafe(i);
+  checkWin();
+  render();
+}
+
+function openSafe(i){
+  const c = board[i];
+  if(c.open || c.flag || c.mine) return;
+  c.open = true;
+  if(c.adj === 0) neighbors(i).forEach(openSafe);
+}
+
+function toggleFlag(i){
+  if(gameOver) return;
+  if(firstClick){ messageEl.textContent = 'Open one tile first. The robot needs a starting coordinate.'; return; }
+  const c = board[i];
+  if(c.open) return;
+  if(!c.flag && flags >= MINES){ messageEl.textContent = 'Only 10 flags. The prize scanner is full.'; return; }
+  c.flag = !c.flag;
+  safeSound(flagSound);
+  flags += c.flag ? 1 : -1;
+  updateCodeFromFlags();
+  checkWin();
+  render();
+}
+
+function updateCodeFromFlags(){
+  const correctFlags = board.filter(c => c.flag && c.mine);
+  foundCode = Array(MINES).fill('_');
+  correctFlags.forEach((c, index) => foundCode[index] = c.codeChar);
+}
+
+function checkWin(){
+  const allMinesFlagged = board.every(c => c.mine ? c.flag : true);
+  const noWrongFlags = board.every(c => !c.flag || c.mine);
+  if(flags === MINES && allMinesFlagged && noWrongFlags) win();
+}
+
+function win(){
+  gameOver = true;
+  face.textContent = '😎';
+  saveWin();
+  foundCode = board.filter(c => c.mine).map(c => c.codeChar);
+  messageEl.textContent = 'Prize code unlocked. The robot union approves.';
+  promoEl.classList.add('show');
+  board.forEach(c => { if(c.mine && c.flag) c.correct = true; });
+  render();
+}
+
+function lose(index){
+  gameOver = true;
+  face.textContent = '💀';
+  saveLoss();
+  messageEl.textContent = 'Oops! Bad luck. That was all attempts for today. Come back tomorrow for fresh explosive rewards.';
+  board.forEach(c => {
+    if(c.mine) c.open = true;
+    if(c.flag && c.mine) c.correct = true;
+    if(c.flag && !c.mine) c.wrong = true;
+  });
+  board[index].exploded = true;
+  render();
+}
+
+document.getElementById('start').onclick = init;
+face.onclick = init;
+flagBtn.onclick = () => {
+  flagMode = !flagMode;
+  flagBtn.textContent = flagMode ? 'flag: on' : 'flag: off';
+  flagBtn.classList.toggle('flag-on', flagMode);
+};
+init();
+</script>
+</body>
+</html>
