@@ -509,7 +509,7 @@ function saveWin(){ localStorage.setItem('pm_streak', String(Math.min(MAX_ATTEMP
 function saveLoss(){ localStorage.setItem('pm_last', today()); }
 
 function init(){
-  attempts = getRemainingAttempts();
+  attempts = DEFAULT_ATTEMPTS; // demo mode: reset attempts on every page load / new session
   flags = 0;
   flagMode = false;
   gameOver = false;
@@ -591,7 +591,7 @@ function clickCell(i){
   if(c.mine){
     showBoomPopup();
     attempts--;
-    saveRemainingAttempts(attempts);
+    // demo mode: do not persist remaining attempts
     c.exploded = true;
     if(attempts <= 0) lose(i);
     else{ messageEl.textContent = 'Oops! Bad luck. Try again or come back tomorrow for fresh explosive rewards.'; c.open = true; render(); }
